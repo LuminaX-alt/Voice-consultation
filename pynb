@@ -1,0 +1,217 @@
+!pip install SpeechRecognition pydub
+import sqlite3
+
+conn = sqlite3.connect('smart_clinic.db')
+cursor = conn.cursor()
+
+cursor.execute('''
+CREATE TABLE IF NOT EXISTS prescriptions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    patient_id TEXT,
+    doctor_name TEXT,
+    prescription_text TEXT,
+    extracted_medicines TEXT,
+    date TEXT
+)
+''')
+
+conn.commit()
+conn.close()
+print("✅ Prescription table created.")
+import speech_recognition as sr
+import datetime
+
+def analyze_voice_prescription(audio_file, patient_id, doctor_name):
+    recognizer = sr.Recognizer()
+
+    # Convert Gradio audio input to usable format
+    with sr.AudioFile(audio_file) as source:
+        audio_data = recognizer.record(source)
+        try:
+            text = recognizer.recognize_google(audio_data)
+        except sr.UnknownValueError:
+            return "Could not understand audio", "", ""
+        except sr.RequestError:
+            return "Speech recognition service error", "", ""
+
+    # Dummy medicine extractor: extract capitalized words (simulate medicine names)
+    words = text.split()
+    medicines = [word for word in words if word[0].isupper()]
+
+    # Store in database
+    conn = sqlite3.connect('smart_clinic.db')
+    cursor = conn.cursor()
+    cursor.execute('''
+        INSERT INTO prescriptions (patient_id, doctor_name, prescription_text, extracted_medicines, date)
+        VALUES (?, ?, ?, ?, ?)
+    ''', (patient_id, doctor_name, text, ", ".join(medicines), datetime.date.today().isoformat()))
+    conn.commit()
+    conn.close()
+
+    return text, ", ".join(medicines), "✅ Prescription saved!"
+!pip install gradio
+!pip install gradio SpeechRecognition gTTS pydub
+import os
+import gradio as gr
+import speech_recognition as sr
+from gtts import gTTS
+from pydub import AudioSegment
+from pydub.playback import play
+import tempfile
+import random
+def ai_response(query):
+    # Dummy logic: match keywords, return answers
+    query = query.lower()
+    if "fever" in query:
+        return "It might be a viral infection. Please take rest and stay hydrated."
+    elif "diabetes" in query:
+        return "You can use our AI Diabetes Prediction Tool to check your condition."
+    elif "skin" in query:
+        return "For skin issues, we have a skin cancer detection AI model you can try."
+    else:
+        return "Sorry, I didn't understand. Can you repeat your symptoms?"
+def voice_doctor(audio):
+    recognizer = sr.Recognizer()
+
+    # Save uploaded audio to temp WAV file
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as temp_file:
+        temp_filename = temp_file.name
+        audio.export(temp_filename, format="wav")
+
+    # Convert speech to text
+    with sr.AudioFile(temp_filename) as source:
+        audio_data = recognizer.record(source)
+        try:
+            query = recognizer.recognize_google(audio_data)
+        except sr.UnknownValueError:
+            return "Sorry, I could not understand your voice.", None
+        except sr.RequestError:
+            return "Speech recognition service error.", None
+
+    # AI Response
+    response = ai_response(query)
+
+    # Text to speech
+    tts = gTTS(text=response)
+    output_path = f"response_{random.randint(1,9999)}.mp3"
+    tts.save(output_path)
+
+    return response, output_path
+!pip install gradio SpeechRecognition gTTS pydub
+import gradio as gr
+import speech_recognition as sr
+from gtts import gTTS
+from pydub import AudioSegment
+import tempfile
+import random
+import os
+def ai_response(query):
+    query = query.lower()
+    if "fever" in query:
+        return "It might be a viral infection. Please take rest and stay hydrated."
+    elif "diabetes" in query:
+        return "You can use our AI Diabetes Prediction Tool to check your condition."
+    elif "skin" in query:
+        return "For skin issues, we have a skin cancer detection AI model you can try."
+    else:
+        return "Sorry, I didn't understand. Can you repeat your symptoms?"
+def voice_doctor(audio_file):
+    recognizer = sr.Recognizer()
+
+    # Save uploaded audio to temp WAV file
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as temp_file:
+        temp_filename = temp_file.name
+        audio_file.export(temp_filename, format="wav")
+
+    with sr.AudioFile(temp_filename) as source:
+        audio_data = recognizer.record(source)
+        try:
+            query = recognizer.recognize_google(audio_data)
+        except sr.UnknownValueError:
+            return "Sorry, I could not understand your voice.", None
+        except sr.RequestError:
+            return "Speech recognition service error.", None
+
+    # AI response
+    response = ai_response(query)
+
+    # Convert to speech
+    tts = gTTS(response)
+    out_path = f"/tmp/response_{random.randint(1,9999)}.mp3"
+    tts.save(out_path)
+
+    return response, out_path
+  def voice_doctor(audio_path):
+    recognizer = sr.Recognizer()
+
+    # Load audio using pydub
+    audio = AudioSegment.from_file(audio_path)
+
+    # Save as WAV for SpeechRecognition
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as temp_wav:
+        wav_path = temp_wav.name
+        audio.export(wav_path, format="wav")
+
+    # Speech to text
+    with sr.AudioFile(wav_path) as source:
+        audio_data = recognizer.record(source)
+        try:
+            query = recognizer.recognize_google(audio_data)
+        except sr.UnknownValueError:
+            return "Sorry, I could not understand your voice.", None
+        except sr.RequestError:
+            return "Speech recognition service error.", None
+
+    # AI response
+    response = ai_response(query)
+
+    # Convert response to speech
+    tts = gTTS(text=response)
+    out_mp3 = f"/tmp/response_{random.randint(1,9999)}.mp3"
+    tts.save(out_mp3)
+
+    return response, out_mp3
+    def voice_doctor(audio_path):
+    recognizer = sr.Recognizer()
+
+    # Load audio using pydub
+    audio = AudioSegment.from_file(audio_path)
+
+    # Save as WAV for SpeechRecognition
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as temp_wav:
+        wav_path = temp_wav.name
+        audio.export(wav_path, format="wav")
+
+    # Speech to text
+    with sr.AudioFile(wav_path) as source:
+        audio_data = recognizer.record(source)
+        try:
+            query = recognizer.recognize_google(audio_data)
+        except sr.UnknownValueError:
+            return "Sorry, I could not understand your voice.", None
+        except sr.RequestError:
+            return "Speech recognition service error.", None
+
+    # AI response
+    response = ai_response(query)
+
+    # Convert response to speech
+    tts = gTTS(text=response)
+    out_mp3 = f"/tmp/response_{random.randint(1,9999)}.mp3"
+    tts.save(out_mp3)
+
+    return response, out_mp3
+with gr.Blocks() as voice_ai_ui:
+    gr.Markdown("# 🩺 Voice-Based AI Doctor Assistant")
+    gr.Markdown("Record your symptoms, and the AI Doctor will respond.")
+
+    audio_input = gr.Audio(label="🎙️ Record Your Voice", type="filepath")
+    response_text = gr.Textbox(label="🧠 AI Doctor's Response")
+    response_audio = gr.Audio(label="🔊 Audio Response", type="filepath")
+
+    submit_btn = gr.Button("Submit")
+
+    submit_btn.click(voice_doctor, inputs=[audio_input], outputs=[response_text, response_audio])
+
+voice_ai_ui.launch()
+
